@@ -35,4 +35,4 @@ To see a run of the algorithm on example data and constraints, run the script `t
 
 ## Dependencise
 
-The program uses [Gurbio](http://www.gurobi.com/) solver to solve the *assignment subproblem*. You should also install the python interface to gurobi (the `gurobipy` module).  
+The program uses [Gurobi](http://www.gurobi.com/) solver to solve the *assignment subproblem*. You should also install the python interface to gurobi (the `gurobipy` module).  
