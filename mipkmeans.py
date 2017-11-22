@@ -20,14 +20,16 @@ from __future__ import division
 from gurobipy import Model, GRB, LinExpr
 from collections import OrderedDict
 import random
-import sys
 
 
 def l2_distance(point1, point2):
     return sum([(float(i)-float(j))**2 for (i,j) in zip(point1, point2)])
 
 class ccmodel(object):
-    def __init__(self, data, k, ml, cl, 
+    def __init__(self, data, k, 
+                 ml, cl,
+                 lb=None, 
+                 ub=None,
                  lazy=0,
                  timeout=None, 
                  verbosity=0):
@@ -36,6 +38,8 @@ class ccmodel(object):
         self.data = data
         self.ml = ml
         self.cl = cl
+        self.lb = lb
+        self.ub = ub
         self.n = len(data)
         self.k = k
         
@@ -59,11 +63,11 @@ class ccmodel(object):
             self.model.addConstr(expr, GRB.EQUAL, 1.0, 'c%d'%i)
         
         # Each cluster contains at least one instance
-        for j in range(self.k):
-            expr = LinExpr([1]*self.n, [self.vars[(i, j)] for i in range(self.n)])
-            c = self.model.addConstr(expr, GRB.GREATER_EQUAL, 1.0, 's%d'%i)
-            # Add these as lazy constraints
-            c.lazy = 2
+        if self.lb is None:
+            for j in range(self.k):
+                expr = LinExpr([1]*self.n, [self.vars[(i, j)] for i in range(self.n)])
+                c = self.model.addConstr(expr, GRB.GREATER_EQUAL, 1.0, 's%d'%i)
+                c.lazy = self.lazy
         
         # must-link constraints
         for i, (first, second) in enumerate(self.ml):
@@ -76,6 +80,17 @@ class ccmodel(object):
             for j in range(self.k):
                 c = self.model.addConstr(self.vars[(first, j)] + self.vars[(second, j)] <= 1.0, 'cl%d:%d'%(i, j))
                 c.lazy = self.lazy
+                
+        # cardinality constraints
+        if self.lb is not None or self.ub is not None:
+            for j in range(self.k):
+                expr = LinExpr([1]*self.n, [self.vars[(i, j)] for i in range(self.n)])
+                if self.lb is not None:
+                    c = self.model.addConstr(expr, GRB.GREATER_EQUAL, self.lb, 'lb%d'%j)
+                    c.lazy = self.lazy
+                if self.ub is not None:
+                    c = self.model.addConstr(expr, GRB.LESS_EQUAL, self.ub, 'ub%d'%j)
+                    c.lazy = self.lazy
         
         self.model.update()
         
@@ -178,13 +193,16 @@ def compute_centers(clusters, dataset, k, canonical=False):
     return clusters, centers
 
 
-def mipkmeans (dataset, k, ml=[], cl=[],
-             initialization='kmpp',
-             convergence_test='label',
-             constraint_laziness=0,
-             max_iter=300, tol=1e-4):
+def mipkmeans(dataset, k, 
+              ml=[], cl=[],
+              lb=None, ub=None, 
+              initialization='kmpp',
+              convergence_test='label',
+              constraint_laziness=0,
+              max_iter=300, tol=1e-4):
 
-    mip_model = ccmodel(dataset, k, ml, cl, lazy=constraint_laziness)
+    mip_model = ccmodel(dataset, k, ml, cl, lb, ub,
+                        lazy=constraint_laziness)
     tol = tolerance(tol, dataset)
     canonical_labeling = (convergence_test == 'label')
     centers = initialize_centers(dataset, k, method=initialization)

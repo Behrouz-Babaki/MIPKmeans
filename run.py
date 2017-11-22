@@ -17,7 +17,6 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
-import sys
 from mipkmeans import mipkmeans, l2_distance
 import argparse
 
@@ -46,7 +45,8 @@ def read_constraints(consfile):
                     cl.append(constraint)
     return ml, cl
 
-def run(datafile, consfile, k, n_rep, 
+def run(datafile, consfile, 
+        lb, ub, k, n_rep, 
         init, conv, lazy,
         max_iter, tolerance):
     data = read_data(datafile)
@@ -55,12 +55,13 @@ def run(datafile, consfile, k, n_rep,
     best_clusters = None
     best_score = None    
     for i in range(n_rep):
-        clusters, centers = mipkmeans(data, k, ml, cl,
-                                    initialization=init,
-                                    convergence_test=conv,
-                                    constraint_laziness=lazy,
-                                    max_iter=max_iter,
-                                    tol=tolerance)
+        clusters, centers = mipkmeans(data, k, 
+                                      ml, cl, lb, ub,
+                                      initialization=init,
+                                      convergence_test=conv,
+                                      constraint_laziness=lazy,
+                                      max_iter=max_iter,
+                                      tol=tolerance)
         if not clusters:
             return None, None
             
@@ -77,6 +78,8 @@ if __name__ == '__main__':
     parser.add_argument('dfile', help='data file')
     parser.add_argument('cfile', help='constraint file')
     parser.add_argument('k', type=int, help='number of clusters')
+    parser.add_argument('--lb', type=int, help='upper-bound on cluster size', default=None)
+    parser.add_argument('--ub', type=int, help='lower-bound on cluster size', default=None)
     parser.add_argument('--ofile', help='file to store the output', default=None)
     parser.add_argument('--sfile', help='file to which to append the summary', default=None)
     parser.add_argument('--n_rep', help='number of times to repeat the algorithm', 
@@ -94,7 +97,8 @@ if __name__ == '__main__':
                         choices=(0, 1, 2, 3), default=0, type=int)
     args = parser.parse_args()
 
-    clusters, score = run(args.dfile, args.cfile, 
+    clusters, score = run(args.dfile, args.cfile,
+                          args.lb, args.ub,
                           args.k, args.n_rep,
                           args.init, args.convergence,
                           args.constraint_laziness,
