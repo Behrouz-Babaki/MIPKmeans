@@ -19,6 +19,7 @@
 from __future__ import print_function
 from mipkmeans import mipkmeans, l2_distance
 import argparse
+import time
 
 def read_data(datafile):
     data = []
@@ -80,8 +81,8 @@ if __name__ == '__main__':
     parser.add_argument('k', type=int, help='number of clusters')
     parser.add_argument('--lb', type=int, help='upper-bound on cluster size', default=None)
     parser.add_argument('--ub', type=int, help='lower-bound on cluster size', default=None)
-    parser.add_argument('--ofile', help='file to store the output', default=None)
-    parser.add_argument('--sfile', help='file to which to append the summary', default=None)
+    parser.add_argument('--ofile', help='file to store the clustering', default=None)
+    parser.add_argument('--sfile', help='file to store the summary', default=None)
     parser.add_argument('--n_rep', help='number of times to repeat the algorithm', 
                         default=10, type=int)
     parser.add_argument('--init', help='initialization method', 
@@ -97,12 +98,14 @@ if __name__ == '__main__':
                         choices=(0, 1, 2, 3), default=0, type=int)
     args = parser.parse_args()
 
+    start_time = time.time()    
     clusters, score = run(args.dfile, args.cfile,
                           args.lb, args.ub,
                           args.k, args.n_rep,
                           args.init, args.convergence,
                           args.constraint_laziness,
                           args.m_iter, args.tol)
+    runtime = time.time() - start_time
 
     if args.ofile is not None and clusters is not None:
         with open(args.ofile, 'w') as f:
@@ -110,11 +113,14 @@ if __name__ == '__main__':
                 f.write('%d\n' %cluster)
                 
     if args.sfile is not None:
-        with open(args.sfile, 'a') as f:
+        with open(args.sfile, 'w') as f:
+            print('objective: ', file=f, end='')
             if score is not None:
-                print('%s %s %d %f'%(args.dfile, args.cfile, args.k, score), file=f)
+                print('%f'%score, file=f)
             else:
-                print('%s %s %d None'%(args.dfile, args.cfile, args.k), file=f)
+                print('None', file=f)
+            print('runtime: %f'%runtime, file=f)
+            
               
     
 
