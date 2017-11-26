@@ -180,17 +180,13 @@ def compute_centers(clusters, dataset, k, canonical=False):
             clusters[j] = c_to_id[c]
      
     dim = len(dataset[0])
-    # TODO vectorize!
-    centers = [[0.0] * dim for i in range(k)]
-    counts = [0] * k
+    centers = np.zeros((k, dim))
+    counts = np.zeros(k)
     for j, c in enumerate(clusters):
-        for i in range(dim):
-            centers[c][i] += dataset[j][i]
+        centers[c] += dataset[j]
         counts[c] += 1
     for j in range(k):
-        for i in range(dim):
-            centers[j][i] = centers[j][i]/float(counts[j])
-    centers = np.array(centers)
+        centers[j] /= counts[j]
     return clusters, centers
 
 
