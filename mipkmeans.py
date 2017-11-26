@@ -139,10 +139,8 @@ def tolerance(tol, dataset):
     return tol * sum(variances) / dim
     
 def closest_clusters(centers, datapoint):
-    # TODO vectorize!
-    distances = [l2_distance(center, datapoint) for
-                 center in centers]
-    return sorted(range(len(distances)), key=lambda x: distances[x]), distances
+    distances = np.square(np.linalg.norm(centers - datapoint, axis=1))
+    return np.argsort(distances), distances
 
 def initialize_centers(dataset, k, method='random'):
     if method == 'random':
@@ -234,8 +232,7 @@ def mipkmeans(dataset, k,
                     converged = False
                 i += 1
         elif convergence_test == 'shift':
-            # TODO vectorize!
-            shift = sum(l2_distance(centers[i], centers_[i]) for i in range(k))
+            shift = np.sum(np.square(np.linalg.norm(centers - centers_)))
             if shift <= tol:
                 converged = True
         
