@@ -22,7 +22,7 @@ from collections import OrderedDict
 import random
 
 def l2_distance(a, b):
-    return np.linalg.norm(a-b)
+    return np.square(np.linalg.norm(a-b))
 
 class ccmodel(object):
     def __init__(self, data, k, 
