@@ -17,6 +17,7 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
+import numpy as np
 from mipkmeans import mipkmeans, l2_distance
 import argparse
 import time
@@ -26,9 +27,11 @@ def read_data(datafile):
     with open(datafile, 'r') as f:
         for line in f:
             line = line.strip()
+            if line.startswith('%'): continue
             if line != '':
                 d = [float(i) for i in line.split()]
                 data.append(d)
+    data = np.array(data)
     return data
 
 def read_constraints(consfile):
@@ -79,6 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('dfile', help='data file')
     parser.add_argument('cfile', help='constraint file')
     parser.add_argument('k', type=int, help='number of clusters')
+    parser.add_argument('--label', type=int, help='the attribute number of class label', default=None)
+    parser.add_argument('--measure', choices=('ARI', 'NMI'), default=None)
     parser.add_argument('--lb', type=int, help='upper-bound on cluster size', default=None)
     parser.add_argument('--ub', type=int, help='lower-bound on cluster size', default=None)
     parser.add_argument('--ofile', help='file to store the clustering', default=None)
@@ -97,6 +102,10 @@ if __name__ == '__main__':
                         help='whether to first add the constraints or only if they are violated',
                         choices=(0, 1, 2, 3), default=0, type=int)
     args = parser.parse_args()
+    
+    if args.measure is not None and args.label is None:
+        print('Class labels are needed for evaluation of clustering')
+        exit(1)
 
     start_time = time.time()    
     clusters, score = run(args.dfile, args.cfile,

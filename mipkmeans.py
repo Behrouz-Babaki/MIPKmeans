@@ -16,13 +16,13 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division
+import numpy as np
 from gurobipy import Model, GRB, LinExpr
 from collections import OrderedDict
 import random
 
-
-def l2_distance(point1, point2):
-    return sum([(float(i)-float(j))**2 for (i,j) in zip(point1, point2)])
+def l2_distance(a, b):
+    return np.linalg.norm(a-b)
 
 class ccmodel(object):
     def __init__(self, data, k, 
@@ -139,6 +139,7 @@ def tolerance(tol, dataset):
     return tol * sum(variances) / dim
     
 def closest_clusters(centers, datapoint):
+    # TODO vectorize!
     distances = [l2_distance(center, datapoint) for
                  center in centers]
     return sorted(range(len(distances)), key=lambda x: distances[x]), distances
@@ -166,7 +167,8 @@ def initialize_centers(dataset, k, method='random'):
             for index, point in enumerate(dataset):
                 cids, distances = closest_clusters(centers, point)
                 chances[index] = distances[cids[0]]
-                
+        
+        centers = np.array(centers)        
         return centers    
 
 def compute_centers(clusters, dataset, k, canonical=False):
@@ -180,6 +182,7 @@ def compute_centers(clusters, dataset, k, canonical=False):
             clusters[j] = c_to_id[c]
      
     dim = len(dataset[0])
+    # TODO vectorize!
     centers = [[0.0] * dim for i in range(k)]
     counts = [0] * k
     for j, c in enumerate(clusters):
@@ -189,6 +192,7 @@ def compute_centers(clusters, dataset, k, canonical=False):
     for j in range(k):
         for i in range(dim):
             centers[j][i] = centers[j][i]/float(counts[j])
+    centers = np.array(centers)
     return clusters, centers
 
 
@@ -230,6 +234,7 @@ def mipkmeans(dataset, k,
                     converged = False
                 i += 1
         elif convergence_test == 'shift':
+            # TODO vectorize!
             shift = sum(l2_distance(centers[i], centers_[i]) for i in range(k))
             if shift <= tol:
                 converged = True
