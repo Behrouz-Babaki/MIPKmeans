@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 #     Copyright (C) 2017  Behrouz Babaki
@@ -54,7 +54,7 @@ def run(datafile, consfile,
     ml, cl = read_constraints(consfile)
     
     best_clusters = None
-    best_score = None    
+    best_score = None
     for i in range(n_rep):
         clusters, centers = mipkmeans(data, k, 
                                       ml, cl, lb, ub,
