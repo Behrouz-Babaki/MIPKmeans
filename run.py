@@ -18,7 +18,7 @@
 
 from __future__ import print_function
 import numpy as np
-from mipkmeans import mipkmeans, l2_distance
+from mipkmeans import mipkmeans, ccmodel, l2_distance
 import argparse
 import time
 
@@ -49,21 +49,23 @@ def read_constraints(consfile):
                     cl.append(constraint)
     return ml, cl
 
-def run(datafile, consfile, 
+def run(data, ml, cl, 
         lb, ub, k, n_rep, 
-        init, conv, lazy,
+        init, conv, laziness,
         max_iter, tolerance):
-    data = read_data(datafile)
-    ml, cl = read_constraints(consfile)
-    
+
+    mip_model = ccmodel(data, k, 
+                        ml, cl, 
+                        lb, ub,
+                        laziness)    
+                        
     best_clusters = None
     best_score = None
     for i in range(n_rep):
         clusters, centers = mipkmeans(data, k, 
-                                      ml, cl, lb, ub,
+                                      mip_model, 
                                       initialization=init,
                                       convergence_test=conv,
-                                      constraint_laziness=lazy,
                                       max_iter=max_iter,
                                       tol=tolerance)
         if not clusters:
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     parser.add_argument('cfile', help='constraint file')
     parser.add_argument('k', type=int, help='number of clusters')
     parser.add_argument('--label', type=int, help='the attribute number of class label', default=None)
-    parser.add_argument('--measure', choices=('ARI', 'NMI'), default=None)
+    parser.add_argument('--measure', choices=('ARI', 'NMI', 'ALL'), default=None)
     parser.add_argument('--lb', type=int, help='upper-bound on cluster size', default=None)
     parser.add_argument('--ub', type=int, help='lower-bound on cluster size', default=None)
     parser.add_argument('--ofile', help='file to store the clustering', default=None)
@@ -107,8 +109,15 @@ if __name__ == '__main__':
         print('Class labels are needed for evaluation of clustering')
         exit(1)
 
-    start_time = time.time()    
-    clusters, score = run(args.dfile, args.cfile,
+    start_time = time.time()
+    data = read_data(args.dfile)
+
+    if args.label is not None:
+        labels = data[:, args.label]
+        data = np.delete(data, args.label, axis=1)        
+
+    ml, cl = read_constraints(args.cfile)    
+    clusters, score = run(data, ml, cl,
                           args.lb, args.ub,
                           args.k, args.n_rep,
                           args.init, args.convergence,
@@ -121,6 +130,15 @@ if __name__ == '__main__':
             for cluster in clusters:
                 f.write('%d\n' %cluster)
                 
+    if args.measure is not None:
+        measures = dict()
+        if args.measure in ('ARI', 'ALL'):
+            from sklearn.metrics import adjusted_rand_score
+            measures['ARI'] = adjusted_rand_score(clusters, labels)
+        if args.measure in ('NMI', 'ALL'):
+            from sklearn.metrics import normalized_mutual_info_score
+            measures['NMI'] = normalized_mutual_info_score(clusters, labels)
+                
     if args.sfile is not None:
         with open(args.sfile, 'w') as f:
             print('objective: ', file=f, end='')
@@ -129,6 +147,8 @@ if __name__ == '__main__':
             else:
                 print('None', file=f)
             print('runtime: %f'%runtime, file=f)
+            for measure in measures:
+                print('%s: %f'%(measure, measures[measure]), file=f)
             
               
     
