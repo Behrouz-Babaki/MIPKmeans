@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('dfile', help='data file')
     parser.add_argument('cfile', help='constraint file')
     parser.add_argument('k', type=int, help='number of clusters')
-    parser.add_argument('--label', type=int, help='the attribute number of class label', default=None)
+    parser.add_argument('--labeled', help='the first column is class label', action='store_true')
     parser.add_argument('--measure', choices=('ARI', 'NMI', 'ALL'), default=None)
     parser.add_argument('--lb', type=int, help='upper-bound on cluster size', default=None)
     parser.add_argument('--ub', type=int, help='lower-bound on cluster size', default=None)
@@ -105,16 +105,16 @@ if __name__ == '__main__':
                         choices=(0, 1, 2, 3), default=0, type=int)
     args = parser.parse_args()
     
-    if args.measure is not None and args.label is None:
+    if args.measure is not None and not args.labeled:
         print('Class labels are needed for evaluation of clustering')
         exit(1)
 
     start_time = time.time()
     data = read_data(args.dfile)
 
-    if args.label is not None:
-        labels = data[:, args.label]
-        data = np.delete(data, args.label, axis=1)        
+    if args.labeled:
+        labels = data[:, 0]
+        data = data[:, 1:]        
 
     ml, cl = read_constraints(args.cfile)    
     clusters, score = run(data, ml, cl,
@@ -129,9 +129,9 @@ if __name__ == '__main__':
         with open(args.ofile, 'w') as f:
             for cluster in clusters:
                 f.write('%d\n' %cluster)
-                
+
+    measures = dict()
     if args.measure is not None:
-        measures = dict()
         if args.measure in ('ARI', 'ALL'):
             from sklearn.metrics import adjusted_rand_score
             measures['ARI'] = adjusted_rand_score(clusters, labels)
