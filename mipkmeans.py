@@ -191,15 +191,11 @@ def compute_centers(clusters, dataset, k, canonical=False):
 
 
 def mipkmeans(dataset, k, 
-              ml=[], cl=[],
-              lb=None, ub=None, 
+              mip_model, 
               initialization='kmpp',
               convergence_test='label',
-              constraint_laziness=0,
               max_iter=300, tol=1e-4):
 
-    mip_model = ccmodel(dataset, k, ml, cl, lb, ub,
-                        lazy=constraint_laziness)
     tol = tolerance(tol, dataset)
     canonical_labeling = (convergence_test == 'label')
     centers = initialize_centers(dataset, k, method=initialization)
