@@ -125,19 +125,29 @@ if __name__ == '__main__':
                           args.m_iter, args.tol)
     runtime = time.time() - start_time
 
-    if args.ofile is not None and clusters is not None:
+    if args.ofile is not None:
         with open(args.ofile, 'w') as f:
-            for cluster in clusters:
-                f.write('%d\n' %cluster)
+            if clusters is not None:
+                for cluster in clusters:
+                    f.write('%d\n' %cluster)
+                    
 
-    measures = dict()
-    if args.measure is not None:
-        if args.measure in ('ARI', 'ALL'):
-            from sklearn.metrics import adjusted_rand_score
-            measures['ARI'] = adjusted_rand_score(clusters, labels)
-        if args.measure in ('NMI', 'ALL'):
-            from sklearn.metrics import normalized_mutual_info_score
-            measures['NMI'] = normalized_mutual_info_score(clusters, labels)
+    if args.measure is not None:        
+        measure_names = []
+        for name in ('ARI', 'NMI'):
+            if args.measure == name or args.measure == 'ALL':
+                measure_names.append(name)
+                
+        measures = dict()
+        if clusters is None:
+            measures = {name: None for name in measure_names}
+        else:
+            if 'ARI' in measure_names:
+                from sklearn.metrics import adjusted_rand_score
+                measures['ARI'] = adjusted_rand_score(clusters, labels)
+            if 'NMI' in measure_names:
+                from sklearn.metrics import normalized_mutual_info_score
+                measures['NMI'] = normalized_mutual_info_score(clusters, labels)            
                 
     if args.sfile is not None:
         with open(args.sfile, 'w') as f:
@@ -148,7 +158,10 @@ if __name__ == '__main__':
                 print('None', file=f)
             print('runtime: %f'%runtime, file=f)
             for measure in measures:
-                print('%s: %f'%(measure, measures[measure]), file=f)
+                if measures[measure] is None:
+                    print('%s: None'%measure, file=f)
+                else:
+                    print('%s: %f'%(measure, measures[measure]), file=f)
             
               
     
