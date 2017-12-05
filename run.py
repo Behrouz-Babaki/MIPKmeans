@@ -16,7 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
+from __future__ import print_function, division
 import numpy as np
 from mipkmeans import mipkmeans, ccmodel, l2_distance
 import argparse
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--ofile', help='file to store the clustering', default=None)
     parser.add_argument('--sfile', help='file to store the summary', default=None)
     parser.add_argument('--n_rep', help='number of times to repeat the algorithm', 
-                        default=10, type=int)
+                        default=1, type=int)
     parser.add_argument('--init', help='initialization method', 
                         choices=('random','kmpp'), default='kmpp')
     parser.add_argument('--convergence', help='convergence criterion', 
@@ -157,6 +157,7 @@ if __name__ == '__main__':
             else:
                 print('None', file=f)
             print('runtime: %f'%runtime, file=f)
+            print('average runtime: %f'%(runtime/args.n_rep), file=f)
             for measure in measures:
                 if measures[measure] is None:
                     print('%s: None'%measure, file=f)
